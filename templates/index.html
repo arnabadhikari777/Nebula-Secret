@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nebula Secret — Secure Steganography & Image Forensics Suite</title>
+    <meta name="description" content="Nebula Secret: hide and reveal secret messages inside images, and inspect EXIF metadata — entirely in your browser session, no files stored.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+    <!-- Animated starfield background -->
+    <div class="stars-layer" id="starsLayer" aria-hidden="true"></div>
+    <div class="nebula-glow nebula-glow-1" aria-hidden="true"></div>
+    <div class="nebula-glow nebula-glow-2" aria-hidden="true"></div>
+
+    <div class="app-shell">
+
+        <!-- ==================== HEADER ==================== -->
+        <header class="site-header">
+            <div class="brand">
+                <span class="brand-icon">🌌</span>
+                <div class="brand-text">
+                    <h1 class="brand-title">Nebula<span class="accent">Secret</span></h1>
+                    <p class="brand-tagline">Secure Steganography &amp; Image Forensics Suite</p>
+                </div>
+            </div>
+        </header>
+
+        <!-- ==================== TAB NAVIGATION ==================== -->
+        <nav class="tab-nav" role="tablist" aria-label="Nebula Secret tools">
+            <button class="tab-btn active" data-tab="encode" role="tab" aria-selected="true">
+                <span class="tab-icon">🔐</span> Encode Message
+            </button>
+            <button class="tab-btn" data-tab="decode" role="tab" aria-selected="false">
+                <span class="tab-icon">🔓</span> Decode Message
+            </button>
+            <button class="tab-btn" data-tab="exif" role="tab" aria-selected="false">
+                <span class="tab-icon">🛰️</span> EXIF Inspector
+            </button>
+        </nav>
+
+        <main class="tab-panels">
+
+            <!-- ==================== ENCODE PANEL ==================== -->
+            <section class="tab-panel active" id="panel-encode" role="tabpanel">
+                <div class="glass-card">
+                    <h2 class="panel-title">Hide a Message Inside an Image</h2>
+                    <p class="panel-subtitle">
+                        Your message is embedded bit-by-bit into the image's pixel data (LSB steganography).
+                        The output is always a lossless PNG — this is required to preserve the hidden data.
+                    </p>
+
+                    <form id="encodeForm">
+                        <div class="dropzone" id="encodeDropzone" data-target="encodeFileInput">
+                            <input type="file" id="encodeFileInput" name="image" accept=".png,.jpg,.jpeg" hidden>
+                            <div class="dropzone-content" id="encodeDropzoneContent">
+                                <span class="dropzone-icon">📤</span>
+                                <p class="dropzone-text">Drag &amp; drop an image, or <span class="link-text">browse files</span></p>
+                                <p class="dropzone-hint">PNG, JPG, or JPEG • Max 16MB</p>
+                            </div>
+                            <div class="preview-content" id="encodePreview" hidden>
+                                <img id="encodePreviewImg" alt="Selected image preview" />
+                                <p class="preview-filename" id="encodeFilename"></p>
+                            </div>
+                        </div>
+
+                        <label class="field-label" for="secretMessage">Secret Message</label>
+                        <textarea
+                            id="secretMessage"
+                            name="message"
+                            class="text-input"
+                            rows="4"
+                            placeholder="Type the message you want to hide inside the image..."
+                            required></textarea>
+
+                        <button type="submit" class="btn-primary" id="encodeSubmitBtn">
+                            <span class="btn-icon">🚀</span> Encode &amp; Download
+                        </button>
+                    </form>
+
+                    <div class="status-box" id="encodeStatus" hidden></div>
+                </div>
+            </section>
+
+            <!-- ==================== DECODE PANEL ==================== -->
+            <section class="tab-panel" id="panel-decode" role="tabpanel">
+                <div class="glass-card">
+                    <h2 class="panel-title">Reveal a Hidden Message</h2>
+                    <p class="panel-subtitle">
+                        Upload a Nebula Secret-encoded PNG to extract its hidden text.
+                        Note: re-saving or converting the image to JPEG destroys the hidden bits.
+                    </p>
+
+                    <form id="decodeForm">
+                        <div class="dropzone" id="decodeDropzone" data-target="decodeFileInput">
+                            <input type="file" id="decodeFileInput" name="image" accept=".png,.jpg,.jpeg" hidden>
+                            <div class="dropzone-content" id="decodeDropzoneContent">
+                                <span class="dropzone-icon">📥</span>
+                                <p class="dropzone-text">Drag &amp; drop a steganographic image, or <span class="link-text">browse files</span></p>
+                                <p class="dropzone-hint">PNG recommended • Max 16MB</p>
+                            </div>
+                            <div class="preview-content" id="decodePreview" hidden>
+                                <img id="decodePreviewImg" alt="Selected image preview" />
+                                <p class="preview-filename" id="decodeFilename"></p>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn-primary" id="decodeSubmitBtn">
+                            <span class="btn-icon">🔍</span> Decode Message
+                        </button>
+                    </form>
+
+                    <div class="status-box" id="decodeStatus" hidden></div>
+
+                    <div class="result-box" id="decodeResult" hidden>
+                        <h3 class="result-label">Hidden Message Found</h3>
+                        <pre class="result-text" id="decodeResultText"></pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ==================== EXIF INSPECTOR PANEL ==================== -->
+            <section class="tab-panel" id="panel-exif" role="tabpanel">
+                <div class="glass-card">
+                    <h2 class="panel-title">Image Forensics: EXIF Metadata</h2>
+                    <p class="panel-subtitle">
+                        Upload any image to inspect its embedded metadata — camera details, timestamps, and GPS location if present.
+                    </p>
+
+                    <form id="exifForm">
+                        <div class="dropzone" id="exifDropzone" data-target="exifFileInput">
+                            <input type="file" id="exifFileInput" name="image" accept=".png,.jpg,.jpeg" hidden>
+                            <div class="dropzone-content" id="exifDropzoneContent">
+                                <span class="dropzone-icon">🛰️</span>
+                                <p class="dropzone-text">Drag &amp; drop an image, or <span class="link-text">browse files</span></p>
+                                <p class="dropzone-hint">PNG, JPG, or JPEG • Max 16MB</p>
+                            </div>
+                            <div class="preview-content" id="exifPreview" hidden>
+                                <img id="exifPreviewImg" alt="Selected image preview" />
+                                <p class="preview-filename" id="exifFilename"></p>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn-primary" id="exifSubmitBtn">
+                            <span class="btn-icon">🔬</span> Inspect Metadata
+                        </button>
+                    </form>
+
+                    <div class="status-box" id="exifStatus" hidden></div>
+
+                    <div class="result-box" id="exifResult" hidden>
+                        <h3 class="result-label" id="exifResultLabel">Metadata Report</h3>
+                        <div class="table-wrap">
+                            <table class="exif-table" id="exifTable">
+                                <thead>
+                                    <tr><th>Property</th><th>Value</th></tr>
+                                </thead>
+                                <tbody id="exifTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- ==================== FOOTER ==================== -->
+        <footer class="site-footer">
+            <div class="footer-divider" aria-hidden="true"></div>
+            <p class="footer-credit">
+                <span class="footer-star">✦</span>
+                Created by <strong>Arnab Adhikari</strong>
+                <span class="footer-star">✦</span>
+            </p>
+            <p class="footer-note">All processing happens in-memory. No images or messages are ever stored.</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
